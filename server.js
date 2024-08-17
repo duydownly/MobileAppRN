@@ -687,20 +687,18 @@ let tempUsers = {};
 app.post('/register', async (req, res) => {
   const { email, password } = req.body;
 
-  // Tạo mã xác nhận đơn giản dựa trên timestamp
-  const token = Date.now().toString();
+  // Tạo mã xác nhận 6 số ngẫu nhiên
+  const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
 
-  // Lưu email, password và token vào bộ nhớ tạm
-  tempUsers[token] = { email, password };
+  // Lưu email, password và mã xác nhận vào bộ nhớ tạm
+  tempUsers[verificationCode] = { email, password };
 
-  const confirmLink = `https://mobileapprn.onrender.com/confirm?token=${token}`;
-
-  // Gửi email xác nhận
+  // Gửi email xác nhận với mã
   transporter.sendMail({
       from: 'duygiodalonroi1102@gmail.com',
       to: email,
       subject: 'Email Confirmation',
-      text: `Click the link to confirm your email: ${confirmLink}`
+      text: `Your verification code is: ${verificationCode}`
   }, (err, info) => {
       if (err) {
           console.error(err);
@@ -710,14 +708,14 @@ app.post('/register', async (req, res) => {
       }
   });
 });
-app.get('/confirm', async (req, res) => {
-  const token = req.query.token;
+app.post('/confirm', async (req, res) => {
+  const { verificationCode } = req.body;
 
-  // Kiểm tra token có hợp lệ không
-  const userData = tempUsers[token];
+  // Kiểm tra mã xác nhận có hợp lệ không
+  const userData = tempUsers[verificationCode];
 
   if (!userData) {
-      return res.status(400).send('Invalid or expired token.');
+      return res.status(400).send('Invalid or expired code.');
   }
 
   const { email, password } = userData;
@@ -726,10 +724,10 @@ app.get('/confirm', async (req, res) => {
       await client.query('INSERT INTO users (email, password) VALUES ($1, $2);', [email, password]);
       console.log('User registered successfully.');
 
-      delete tempUsers[token];
+      delete tempUsers[verificationCode];
 
       // Gửi thông báo qua WebSocket khi email được xác nhận
-      notifyEmailConfirmed(token);
+      notifyEmailConfirmed(verificationCode);
 
       res.status(200).send('Email confirmed and user registered.');
   } catch (err) {
