@@ -609,11 +609,13 @@ app.get('/myAttendanceMinimal', async (req, res) => {
     }
 
     const query = `
-      SELECT a.status, a.date AS datetime
-      FROM attendance a
-      WHERE a.employee_id = $1 AND a.date::date = CURRENT_DATE
-      ORDER BY a.date DESC
-      LIMIT 1;
+   SELECT a.status, a.date AS datetime
+FROM attendance a
+WHERE a.employee_id = $1
+  AND a.date::date = date((now() + interval '7 hours')::date)
+ORDER BY a.date DESC
+LIMIT 1;
+
     `;
 
     const result = await client.query(query, [employee_id]);
