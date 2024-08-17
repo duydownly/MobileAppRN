@@ -742,26 +742,26 @@ app.post('/confirmE', async (req, res) => {
   const userData = tempUsers[verificationCode];
 
   if (!userData) {
-      return res.status(400).send('Invalid or expired code.');
+    return res.status(400).send('Invalid or expired code.');
   }
 
   const { email, password } = userData;
 
   try {
-      await client.query('INSERT INTO employees (email, password) VALUES ($1, $2);', [email, password]);
-      console.log('Employee registered successfully.');
+    // Chỉ xóa mã xác nhận và không thực hiện bất kỳ thao tác nào khác.
+    delete tempUsers[verificationCode];
 
-      delete tempUsers[verificationCode];
+    // Gửi thông báo qua WebSocket khi email được xác nhận
+    notifyEmailConfirmed(verificationCode);
 
-      // Gửi thông báo qua WebSocket khi email được xác nhận
-      notifyEmailConfirmed(verificationCode);
-
-      res.status(200).send('Email confirmed and employee registered.');
+    // Gửi phản hồi thành công về frontend, không cần lưu vào cơ sở dữ liệu
+    res.status(200).json({ email, password });
   } catch (err) {
-      console.error('Error inserting employee into database:', err);
-      res.status(500).send('Error registering employee.');
+    console.error('Error during confirmation:', err);
+    res.status(500).send('Error during confirmation.');
   }
 });
+
 
 // Start server
 app.listen(PORT, () => {
