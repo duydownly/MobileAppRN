@@ -4,6 +4,7 @@ const { client, connectDB } = require('./db');
 const bodyParser = require('body-parser');
 const moment = require('moment-timezone');
 const transporter = require('./mailConfig'); // Import the transporter
+const { notifyEmailConfirmed } = require('./ws');
 
 const app = express();
 
@@ -709,7 +710,6 @@ app.post('/register', async (req, res) => {
       }
   });
 });
-
 app.get('/confirm', async (req, res) => {
   const token = req.query.token;
 
@@ -722,13 +722,14 @@ app.get('/confirm', async (req, res) => {
 
   const { email, password } = userData;
 
-  // Chèn dữ liệu vào cơ sở dữ liệu
   try {
       await client.query('INSERT INTO users (email, password) VALUES ($1, $2);', [email, password]);
       console.log('User registered successfully.');
 
-      // Xóa dữ liệu tạm
       delete tempUsers[token];
+
+      // Gửi thông báo qua WebSocket khi email được xác nhận
+      notifyEmailConfirmed(token);
 
       res.status(200).send('Email confirmed and user registered.');
   } catch (err) {
@@ -736,7 +737,6 @@ app.get('/confirm', async (req, res) => {
       res.status(500).send('Error registering user.');
   }
 });
-
 
 // Start server
 app.listen(PORT, () => {
