@@ -693,7 +693,7 @@ app.post('/register', async (req, res) => {
   // Lưu email, password và token vào bộ nhớ tạm
   tempUsers[token] = { email, password };
 
-  const confirmLink = `http://localhost:3000/confirm?token=${token}`;
+  const confirmLink = `https://mobileapprn.onrender.com/confirm?token=${token}`;
 
   // Gửi email xác nhận
   transporter.sendMail({
