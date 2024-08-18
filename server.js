@@ -74,26 +74,34 @@ app.get('/getAllEmployees', async (req, res) => {
 });
 
 
-
-
-//update employee password (account)                                            
+// Update employee password (account)
 app.patch('/updatePasswordEmployee', async (req, res) => {
-  const { employee_id, newPassword } = req.body;
+  const { employee_id, currentPassword, newPassword } = req.body;
 
-  if (!employee_id || !newPassword) {
-    return res.status(400).json({ error: 'employee_id and newPassword are required' });
+  if (!employee_id || !currentPassword || !newPassword) {
+    return res.status(400).json({ error: 'employee_id, currentPassword, and newPassword are required' });
   }
 
   try {
-    const query = 'UPDATE employees SET password = $1 WHERE id = $2 RETURNING *';
-    const values = [newPassword, employee_id];
-    const result = await client.query(query, values);
+    // Check if the current password matches
+    const checkPasswordQuery = 'SELECT password FROM employees WHERE id = $1';
+    const checkPasswordResult = await client.query(checkPasswordQuery, [employee_id]);
 
-    if (result.rows.length === 0) {
+    if (checkPasswordResult.rows.length === 0) {
       return res.status(404).json({ error: 'Employee not found' });
     }
 
-    res.status(200).json(result.rows[0]);
+    const storedPassword = checkPasswordResult.rows[0].password;
+
+    if (storedPassword !== currentPassword) {
+      return res.status(400).json({ error: 'Current password is incorrect' });
+    }
+
+    // Update the password
+    const updatePasswordQuery = 'UPDATE employees SET password = $1 WHERE id = $2 RETURNING *';
+    const updatePasswordResult = await client.query(updatePasswordQuery, [newPassword, employee_id]);
+
+    res.status(200).json(updatePasswordResult.rows[0]);
   } catch (err) {
     console.error('Error executing query', err);
     res.status(500).json({ error: 'Internal Server Error' });
@@ -101,24 +109,34 @@ app.patch('/updatePasswordEmployee', async (req, res) => {
 });
 
 
-//update admin password (account)                                            
+// Update admin password (account)
 app.patch('/updatePasswordAdmin', async (req, res) => {
-  const { admin_id, newPassword } = req.body;
+  const { admin_id, currentPassword, newPassword } = req.body;
 
-  if (!admin_id || !newPassword) {
-    return res.status(400).json({ error: 'adminID and newPassword are required' });
+  if (!admin_id || !currentPassword || !newPassword) {
+    return res.status(400).json({ error: 'admin_id, currentPassword, and newPassword are required' });
   }
 
   try {
-    const query = 'UPDATE users SET password = $1 WHERE id = $2 RETURNING *';
-    const values = [newPassword, admin_id];
-    const result = await client.query(query, values);
+    // Check if the current password matches
+    const checkPasswordQuery = 'SELECT password FROM users WHERE id = $1';
+    const checkPasswordResult = await client.query(checkPasswordQuery, [admin_id]);
 
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'account not found' });
+    if (checkPasswordResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Account not found' });
     }
 
-    res.status(200).json(result.rows[0]);
+    const storedPassword = checkPasswordResult.rows[0].password;
+
+    if (storedPassword !== currentPassword) {
+      return res.status(400).json({ error: 'Current password is incorrect' });
+    }
+
+    // Update the password
+    const updatePasswordQuery = 'UPDATE users SET password = $1 WHERE id = $2 RETURNING *';
+    const updatePasswordResult = await client.query(updatePasswordQuery, [newPassword, admin_id]);
+
+    res.status(200).json(updatePasswordResult.rows[0]);
   } catch (err) {
     console.error('Error executing query', err);
     res.status(500).json({ error: 'Internal Server Error' });
@@ -467,7 +485,7 @@ app.post('/checkIn', async (req, res) => {
   }
 
   try {
-    const currentDate = moment().tz('Asia/Ho_Chi_Minh').format('YYYY-MM-DD');
+    const currentDate = moment().tz('Asia/Bangkok').format('YYYY-MM-DD');
 
     const query = `
       INSERT INTO attendance (employee_id, date, status, color)
