@@ -796,6 +796,34 @@ app.post('/DailyAttendanceCheck', async (req, res) => {
   }
 });
 
+//delete employee
+app.delete('/deleteEmployee', async (req, res) => {
+  try {
+    const { employee_id } = req.body;
+
+    if (!employee_id) {
+      return res.status(400).json({ error: 'Employee ID is required' });
+    }
+
+    // Delete the employee from the employees table
+    const deleteQuery = `
+      DELETE FROM employees
+      WHERE id = $1;
+    `;
+
+    const result = await client.query(deleteQuery, [employee_id]);
+
+    if (result.rowCount === 0) {
+      return res.status(404).json({ error: 'Employee not found' });
+    }
+
+    res.status(200).json({ message: 'Employee deleted successfully' });
+  } catch (error) {
+    console.error('Error executing query', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
 
 // Start server
 app.listen(PORT, () => {
