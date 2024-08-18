@@ -5,22 +5,17 @@ const bodyParser = require('body-parser');
 const moment = require('moment-timezone');
 const transporter = require('./mailConfig'); // Import the transporter
 const { notifyEmailConfirmed } = require('./ws');
-
 const app = express();
-
 const PORT = process.env.PORT || 3000;
-
 // Middleware
 app.use(express.json());
 app.use(cors()); // Enable CORS if needed
 app.use(bodyParser.json());
-
 // Import database connection
 connectDB();
 //get list of employees        
 app.post('/sendTestEmail', async (req, res) => {
   const { toEmail, subject, text } = req.body;
-
   if (!toEmail || !subject || !text) {
     return res.status(400).json({ error: 'Recipient email, subject, and text are required' });
   }
@@ -305,8 +300,8 @@ app.post('/addEmployee', async (req, res) => {
 
     // Insert new employee
     const insertEmployeeQuery = `
-      INSERT INTO employees (name, phone, email, password, cmnd, birth_date, address, status, admin_id)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, 'active', $8)
+      INSERT INTO employees (name, phone, email, password, cmnd, birth_date, address, admin_id)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
       RETURNING id;
     `;
     const employeeValues = [name, phone, email, password, idNumber, dob, address, admin_id];
