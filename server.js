@@ -782,7 +782,7 @@ app.delete('/deleteEmployee', async (req, res) => {
 });
 app.get('/inforadmin', async (req, res) => {
   try {
-    const result = await client.query('SELECT * FROM users');
+    const result = await client.query('SELECT id FROM users');
     res.json(result.rows);
   } catch (error) {
     console.error('Error executing query', error.stack);
@@ -790,17 +790,16 @@ app.get('/inforadmin', async (req, res) => {
   }
 });
 
-// API để lấy thông tin từ bảng employees
+// API để lấy id và name từ bảng employees
 app.get('/inforemployees', async (req, res) => {
   try {
-    const result = await client.query('SELECT * FROM employees');
+    const result = await client.query('SELECT id, name FROM employees');
     res.json(result.rows);
   } catch (error) {
     console.error('Error executing query', error.stack);
     res.status(500).send('Error executing query');
   }
 });
-
 // Start server
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
