@@ -462,7 +462,7 @@ app.post('/checkIn', async (req, res) => {
   }
 
   try {
-    const currentDate = moment().tz('Asia/Bangkok').format('YYYY-MM-DD');
+    const currentDate = moment().tz('Asia/Ho_Chi_Minh').format('YYYY-MM-DD');
 
     const query = `
       INSERT INTO attendance (employee_id, date, status, color)
@@ -482,44 +482,6 @@ app.post('/checkIn', async (req, res) => {
 });
 
 
-app.post('/signup', async (req, res) => {
-  const { email, password } = req.body;
-
-  if (!email || !password) {
-    return res.status(400).json({ error: 'Email and password are required' });
-  }
-
-  try {
-    // Create the user with Firebase Auth
-    const userRecord = await admin.auth().createUser({
-      email: email,
-      password: password,
-      emailVerified: false,
-      // Set other properties as needed
-    });
-
-    // Generate email verification link
-    const emailVerificationLink = await admin.auth().generateEmailVerificationLink(email);
-
-    // Send verification email using Nodemailer
-    await transporter.sendMail({
-      from: 'no-reply@example.com',
-      to: email,
-      subject: 'Please verify your email address',
-      text: `Click the following link to verify your email address: ${emailVerificationLink}`,
-    });
-
-    res.status(200).json({
-      message: 'User signed up successfully. Verification email sent.',
-      userId: userRecord.uid,
-      emailVerificationLink
-    });
-  } catch (error) {
-    console.error('Error creating user:', error);
-    res.status(500).json({ error: 'Internal Server Error' });
-  }
-});
-
 // login for admin
 app.post('/loginAdmin', async (req, res) => {
   const { email, password } = req.body;
@@ -537,26 +499,6 @@ app.post('/loginAdmin', async (req, res) => {
       } else {
         return res.status(401).json({ message: 'Invalid credentials' });
       }
-    }
-
-    // If user doesn't exist locally, check Firebase
-    try {
-      const firebaseUser = await admin.auth().getUserByEmail(email);
-
-      // Check if the email is verified
-      if (firebaseUser.emailVerified) {
-        // Add the user to the local database
-        const insertResult = await client.query(
-          'INSERT INTO users (email, password, uid) VALUES ($1, $2, $3) RETURNING id',
-          [email, password, firebaseUser.uid]
-        );
-        return res.status(200).json({ message: 'Email verified. Please login again' }); //return to login page not home page
-      } else {
-        return res.status(401).json({ message: 'Email not verified' });
-      }
-    } catch (error) {
-      // If the user doesn't exist in Firebase, return an error
-      return res.status(404).json({ message: 'Account does not exist' });
     }
   } catch (error) {
     console.error('Error logging in:', error);
@@ -789,6 +731,34 @@ app.post('/DailyAttendanceCheck', async (req, res) => {
     res.status(200).json({ message: 'Attendance updated successfully' });
   } catch (err) {
     console.error('Error executing query', err);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+//delete employee
+app.delete('/deleteEmployee', async (req, res) => {
+  try {
+    const { employee_id } = req.body;
+
+    if (!employee_id) {
+      return res.status(400).json({ error: 'Employee ID is required' });
+    }
+
+    // Delete the employee from the employees table
+    const deleteQuery = `
+      DELETE FROM employees
+      WHERE id = $1;
+    `;
+
+    const result = await client.query(deleteQuery, [employee_id]);
+
+    if (result.rowCount === 0) {
+      return res.status(404).json({ error: 'Employee not found' });
+    }
+
+    res.status(200).json({ message: 'Employee deleted successfully' });
+  } catch (error) {
+    console.error('Error executing query', error);
     res.status(500).json({ error: 'Internal Server Error' });
   }
 });
